@@ -36,35 +36,45 @@ export async function POST(request: Request) {
       ...history.map(turn => ({ role: turn.role === 'assistant' ? 'model' : 'user', parts: [{ text: turn.content }] })),
       { role: 'user', parts: [{ text: message }] },
     ]
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        contents,
-        generationConfig: { maxOutputTokens: 700, temperature: 0.8 },
-      }),
-      cache: 'no-store',
+    const payload = JSON.stringify({
+      systemInstruction: { parts: [{ text: systemInstruction }] },
+      contents,
+      generationConfig: { maxOutputTokens: 700, temperature: 0.8 },
     })
+    let response: Response | undefined
+    for (const delay of [0, 500, 1200]) {
+      if (delay) await new Promise(resolve => setTimeout(resolve, delay))
+      response = await requestGemini(model, apiKey, payload)
+      if (response.status !== 503 && response.status !== 504) break
+    }
+    if (!response) return NextResponse.json({ error: 'The AI provider did not return a response. Please try again.' }, { status: 502 })
     if (!response.ok) {
       const result = await response.json().catch(() => null)
       const details = typeof result?.error?.message === 'string' ? result.error.message : ''
       if (response.status === 429) return NextResponse.json({ error: 'The Gemini free-tier quota is temporarily exhausted. Please try again later or contact our consultants.' }, { status: 429 })
       if (response.status === 400 || response.status === 403) return NextResponse.json({ error: `Gemini could not accept this request. Check your AI Studio API key, project and model access.${details ? ` ${details}` : ''}` }, { status: 502 })
+      if (response.status === 503 || response.status === 504) return NextResponse.json({ error: 'Gemini is temporarily overloaded. Please try again in a moment or contact our consultants.' }, { status: 503 })
       return NextResponse.json({ error: 'The live advisor is temporarily unavailable. Please try again or contact our consultants.' }, { status: 503 })
     }
-    if (!response.body) return NextResponse.json({ error: 'Gemini did not return a response stream.' }, { status: 502 })
-    return new Response(response.body, {
-      headers: {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache, no-transform',
-        'X-Accel-Buffering': 'no',
-      },
-    })
+    const result = await response.json()
+    const reply = Array.isArray(result?.candidates?.[0]?.content?.parts)
+      ? result.candidates[0].content.parts.map((part: { text?: string }) => part.text || '').join('').trim()
+      : ''
+    if (!reply) return NextResponse.json({ error: 'The advisor could not form a response. Please try again or contact our consultants.' }, { status: 502 })
+    return NextResponse.json({ reply })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to reach the AI advisor.'
     return NextResponse.json({ error: `The AI advisor is temporarily unavailable. ${message}` }, { status: 503 })
   }
+}
+
+function requestGemini(model: string, apiKey: string, body: string) {
+  return fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+    body,
+    cache: 'no-store',
+  })
 }
 
 function normalizeHistory(value: unknown): ChatTurn[] {
