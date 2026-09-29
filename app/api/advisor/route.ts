@@ -1,4 +1,3 @@
-import OpenAI from 'openai'
 import { NextResponse } from 'next/server'
 import { getDatabase } from '@/lib/mongodb'
 import type { AuctionRecord } from '@/lib/auction-types'
@@ -13,7 +12,8 @@ export async function POST(request: Request) {
   const message = typeof body?.message === 'string' ? body.message.trim() : ''
   const history = normalizeHistory(body?.history)
   if (!message || message.length > 2000) return NextResponse.json({ error: 'Write a message under 2,000 characters.' }, { status: 400 })
-  if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: 'The AI advisor is not configured yet. Add OPENAI_API_KEY to the server environment.' }, { status: 503 })
+  const apiKey = process.env.GEMINI_API_KEY
+  if (!apiKey) return NextResponse.json({ error: 'The live advisor is not configured yet. Add GEMINI_API_KEY to the server environment.' }, { status: 503 })
 
   try {
     const database = await getDatabase()
@@ -29,22 +29,38 @@ export async function POST(request: Request) {
       title, category, location, currentBid, minimumIncrement, startsAt, endsAt, bidCount,
     }))
 
-    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    const response = await client.chat.completions.create({
-      model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
-      max_completion_tokens: 700,
-      messages: [
-        {
-          role: 'system',
-          content: `You are AMSI's property and investment advisor. Have a natural, multi-turn conversation: answer the user's actual question, ask one useful follow-up when needed, and remember prior turns. Use RWF unless the user specifies otherwise. Ground recommendations only in the current inventory data below. Never invent an item, price, availability, rental yield, legal fact, or investment return. If nothing fits the user's budget or goals, say so and offer the closest real options or explain what more information you need. For budget/project questions, compare relevant listed properties and active auctions, account for asking/current prices, and explain trade-offs without guaranteeing outcomes. Clearly distinguish listings for sale, rent, and auction. Keep responses clear and concise.\n\nCURRENT PUBLISHED LISTINGS (JSON): ${JSON.stringify(listings)}\n\nCURRENT UPCOMING AUCTIONS (JSON): ${JSON.stringify(auctions)}`,
-        },
-        ...history,
-        { role: 'user', content: message },
-      ],
+    const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash'
+    if (!/^[a-z0-9.-]+$/i.test(model)) return NextResponse.json({ error: 'GEMINI_MODEL contains an invalid model name.' }, { status: 500 })
+    const systemInstruction = `You are AMSI's friendly AI assistant. Be conversational and natural: greet people warmly, answer ordinary general-interest questions helpfully and concisely, and never pretend to be human. Your specialty is AMSI's property marketplace, rentals, budget/project ideas, auctions and consultancy. For unrelated topics, answer briefly and gently guide the conversation back when appropriate; do not refuse harmless questions. For property or investment-project recommendations, use RWF unless told otherwise and use only current inventory below for item names, prices and availability. Never invent listings, prices, yields, legal facts or guaranteed returns. Clearly distinguish sales, rentals and auctions; explain trade-offs, and state when nothing fits. Do not present yourself as a financial or legal professional. If the client is dissatisfied, asks for a human, or needs tailored follow-up, tell them they can contact AMSI consultants using the handoff in this chat. Ask a useful follow-up when needed.\n\nCURRENT PUBLISHED LISTINGS (JSON): ${JSON.stringify(listings)}\n\nCURRENT UPCOMING AUCTIONS (JSON): ${JSON.stringify(auctions)}`
+    const contents = [
+      ...history.map(turn => ({ role: turn.role === 'assistant' ? 'model' : 'user', parts: [{ text: turn.content }] })),
+      { role: 'user', parts: [{ text: message }] },
+    ]
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents,
+        generationConfig: { maxOutputTokens: 700, temperature: 0.8 },
+      }),
+      cache: 'no-store',
     })
-    const reply = response.choices[0]?.message.content?.trim()
-    if (!reply) return NextResponse.json({ error: 'The advisor did not return a response. Please try again.' }, { status: 502 })
-    return NextResponse.json({ reply })
+    if (!response.ok) {
+      const result = await response.json().catch(() => null)
+      const details = typeof result?.error?.message === 'string' ? result.error.message : ''
+      if (response.status === 429) return NextResponse.json({ error: 'The Gemini free-tier quota is temporarily exhausted. Please try again later or contact our consultants.' }, { status: 429 })
+      if (response.status === 400 || response.status === 403) return NextResponse.json({ error: `Gemini could not accept this request. Check your AI Studio API key, project and model access.${details ? ` ${details}` : ''}` }, { status: 502 })
+      return NextResponse.json({ error: 'The live advisor is temporarily unavailable. Please try again or contact our consultants.' }, { status: 503 })
+    }
+    if (!response.body) return NextResponse.json({ error: 'Gemini did not return a response stream.' }, { status: 502 })
+    return new Response(response.body, {
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
+      },
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to reach the AI advisor.'
     return NextResponse.json({ error: `The AI advisor is temporarily unavailable. ${message}` }, { status: 503 })
