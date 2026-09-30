@@ -1,21 +1,6 @@
 import { Analytics } from '@vercel/analytics/next'
-import localFont from 'next/font/local'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
-
-const rubik = localFont({
-  src: '../node_modules/@fontsource-variable/rubik/files/rubik-latin-wght-normal.woff2',
-  weight: '300 900',
-  variable: '--font-rubik',
-  display: 'swap',
-})
-
-const fraunces = localFont({
-  src: '../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-full-normal.woff2',
-  weight: '300 900',
-  variable: '--font-fraunces',
-  display: 'swap',
-})
 
 export const metadata: Metadata = {
   title: 'AMSI | Access more. Move well.',
@@ -55,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${rubik.variable} ${fraunces.variable} antialiased`}>
+      <body className="antialiased">
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

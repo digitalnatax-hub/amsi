@@ -9,6 +9,7 @@ import {
   Bell,
   Building2,
   Check,
+  ChevronLeft,
   ChevronDown,
   ChevronRight,
   Clock3,
@@ -133,9 +134,9 @@ export default function Page() {
   const filteredListings = useMemo(() => selectedCategory === 'All'
     ? searchResults
     : searchResults.filter(item => item.category.trim() === selectedCategory), [searchResults, selectedCategory])
-  const listingGroups = useMemo(() => categories
-    .map(category => ({ category, items: filteredListings.filter(item => item.category.trim() === category) }))
-    .filter(group => group.items.length > 0), [categories, filteredListings])
+  const listingGroups = useMemo(() => filteredListings.length > 0
+    ? [{ category: selectedCategory === 'All' ? 'All opportunities' : selectedCategory, items: filteredListings }]
+    : [], [filteredListings, selectedCategory])
   const heroAd = ads.find(ad => ad.placement === 'hero-poster')
   const leaderboardAds = ads.filter(ad => ad.placement === 'leaderboard')
   const mobileBannerAds = ads.filter(ad => ad.placement === 'mobile-leaderboard' || ad.placement === 'mobile-large-banner')
@@ -208,7 +209,21 @@ export default function Page() {
             </button>)}
           </div>
         </div>
-        {listingGroups.map(group => <div key={group.category} className="listing-category-section"><div className="listing-category-heading"><h3 className="serif">{group.category}</h3><span>{group.items.length} {group.items.length === 1 ? 'listing' : 'listings'}</span></div><div className="row g-4 justify-content-center mx-auto" style={{ maxWidth: '1120px' }}>{group.items.map(item => <div key={item.id} className="col-12 col-md-6 col-lg-4"><ListingCard item={item} isSaved={favoriteIds.has(item.id)} onFavorite={() => void toggleFavorite(item.id)} /></div>)}</div></div>)}
+        {listingGroups.map(group => {
+          const railId = `listing-rail-${group.category.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`
+          return <section key={group.category} className="listing-category-section" aria-label={`${group.category} listings`}>
+            <div className="listing-category-heading">
+              <div><h3 className="serif">{group.category}</h3><span>{group.items.length} {group.items.length === 1 ? 'opportunity' : 'opportunities'}</span></div>
+              <div className="listing-rail-controls">
+                <button type="button" aria-label={`Scroll ${group.category} listings left`} onClick={() => document.getElementById(railId)?.scrollBy({ left: -360, behavior: 'smooth' })}><ChevronLeft size={17} /></button>
+                <button type="button" aria-label={`Scroll ${group.category} listings right`} onClick={() => document.getElementById(railId)?.scrollBy({ left: 360, behavior: 'smooth' })}><ChevronRight size={17} /></button>
+              </div>
+            </div>
+            <div id={railId} className="listing-rail" tabIndex={0} aria-label={`${group.category} listings carousel`}>
+              {group.items.map(item => <div key={item.id} className="listing-rail__item"><ListingCard item={item} isSaved={favoriteIds.has(item.id)} onFavorite={() => void toggleFavorite(item.id)} /></div>)}
+            </div>
+          </section>
+        })}
         {listingsLoading && <div className="py-12 text-center text-sm text-[#727b70]">Loading current opportunities...</div>}
         {listingError && <div role="alert" className="mt-5 border border-[#e5c8c3] bg-[#fff8f6] px-5 py-4 text-sm text-[#9b4844]">Unable to load the collection: {listingError}</div>}
         {!listingsLoading && !listingError && filteredListings.length === 0 && <div className="border border-dashed border-[#d4d9d0] p-10 text-center"><Building2 className="mx-auto text-[#0a486f]" size={26} /><h3 className="serif mt-4 text-2xl text-[#173b38]">A new collection is taking shape.</h3><p className="mt-2 text-sm text-[#727b70]">There are no published {mode.toLowerCase()} listings matching this view yet.</p></div>}

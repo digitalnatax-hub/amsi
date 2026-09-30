@@ -2,7 +2,7 @@
 
 import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ArrowUpRight, Check, ChevronLeft, ChevronRight, Heart, MapPin, Share2, ShieldCheck, X } from 'lucide-react'
+import { ArrowLeft, ArrowUpRight, Building2, Check, ChevronLeft, ChevronRight, Heart, MapPin, Share2, X } from 'lucide-react'
 import type { MarketplaceListing } from '@/lib/listing-types'
 
 type Listing = MarketplaceListing & { id: string }
@@ -39,24 +39,86 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
     }
   }
 
-  if (loading) return <main className="grid min-h-screen place-items-center bg-[#f4f3ef] text-[#173b38]">Loading opportunity...</main>
-  if (!listing) return <main className="min-h-screen bg-[#f4f3ef] px-5 py-10 text-[#173b38]"><Link href="/" className="flex items-center gap-2 text-sm font-semibold"><ArrowLeft size={16} /> Back to marketplace</Link><section className="mx-auto mt-28 max-w-xl text-center"><p className="eyebrow">Opportunity unavailable</p><h1 className="serif mt-3 text-4xl">We couldn't find this listing.</h1><p className="mt-4 text-sm text-[#78817a]">{notice || 'It may have been removed or is not published.'}</p><Link href="/" className="mt-7 inline-flex items-center gap-2 bg-[#173b38] px-5 py-3 text-sm font-semibold text-white">Browse marketplace <ArrowUpRight size={15} /></Link></section></main>
+  if (loading) return <main className="listing-detail__state"><span className="listing-detail__spinner" role="status"><span className="visually-hidden">Loading opportunity...</span></span></main>
+  if (!listing) return <main className="listing-detail"><div className="container-fluid listing-detail__container py-5"><Link href="/" className="listing-detail__back"><ArrowLeft size={16} /> Marketplace</Link><section className="listing-detail__empty"><Building2 size={34} /><p className="eyebrow mt-4">Opportunity unavailable</p><h1 className="serif">We couldn't find this listing.</h1><p>{notice || 'It may have been removed or is not published.'}</p><Link href="/" className="listing-detail__primary">Browse marketplace <ArrowUpRight size={16} /></Link></section></div></main>
 
-  return <main className="min-h-screen bg-[#f4f3ef] text-[#17211f]">
-    {listing.isSample && <div role="note" className="border-b border-[#ead8a7] bg-[#fff9e8] px-5 py-3 text-center text-xs font-semibold text-[#745f2e]">Illustrative sample listing. Price, features and availability are fictional examples for demonstration.</div>}
-    <header className="border-b border-[#dedfd7] bg-white"><div className="mx-auto flex max-w-[1360px] items-center justify-between px-5 py-4 lg:px-10"><Link href="/" className="text-sm font-semibold tracking-[.14em] text-[#173b38]">AMSI <span className="font-normal tracking-normal text-[#78817a]">&amp; Co.</span></Link><Link href="/" className="flex items-center gap-2 text-sm font-semibold text-[#315c50]"><ArrowLeft size={16} /> Marketplace</Link></div></header>
-    <div className="mx-auto max-w-[1360px] px-5 pb-20 pt-8 lg:px-10 lg:pt-12">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><p className="eyebrow">{listing.category} <span className="px-1 text-[#b2a27b]">/</span> {listing.purpose}</p><p className="mt-3 text-xs font-semibold uppercase tracking-[.14em] text-[#7e8780]">Reference {listing.reference || 'On request'}</p></div><div className="flex gap-2"><button onClick={() => setSaved(value => !value)} aria-label={saved ? 'Remove from saved listings' : 'Save listing'} className="grid size-11 place-items-center border border-[#d7d9d1] bg-white text-[#315c50]"><Heart size={18} fill={saved ? '#315c50' : 'none'} /></button><button onClick={shareListing} aria-label="Share listing" className="grid size-11 place-items-center border border-[#d7d9d1] bg-white text-[#315c50]"><Share2 size={18} /></button></div></div>
-      <div className="grid gap-8 lg:grid-cols-[1.45fr_.55fr]">
-        <section><div className="relative aspect-[4/3] max-h-[650px] overflow-hidden bg-[#e6e7df] sm:aspect-[16/10]">{active ? active.contentType.startsWith('video/') ? <video key={active.id} src={active.id.startsWith('https://') ? active.id : `/api/media/${active.id}`} controls className="h-full w-full object-cover" /> : <img src={active.id.startsWith('https://') ? active.id : `/api/media/${active.id}`} alt={`${listing.title}, view ${activeMedia + 1}`} className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-sm text-[#78817a]">Media for this opportunity will be added shortly.</div>}{media.length > 1 && <><button aria-label="Previous media" onClick={() => setActiveMedia(index => (index + media.length - 1) % media.length)} className="absolute left-4 top-1/2 grid size-10 -translate-y-1/2 place-items-center bg-white/90 text-[#173b38]"><ChevronLeft size={19} /></button><button aria-label="Next media" onClick={() => setActiveMedia(index => (index + 1) % media.length)} className="absolute right-4 top-1/2 grid size-10 -translate-y-1/2 place-items-center bg-white/90 text-[#173b38]"><ChevronRight size={19} /></button><span className="absolute bottom-4 left-4 bg-[#173b38]/90 px-3 py-1.5 text-xs font-semibold text-white">{activeMedia + 1} / {media.length}</span></>}</div>{media.length > 1 && <div className="mt-3 grid grid-cols-4 gap-3 sm:grid-cols-6">{media.map((item, index) => <button key={item.id} onClick={() => setActiveMedia(index)} className={`relative aspect-[4/3] overflow-hidden bg-[#e6e7df] ${activeMedia === index ? 'ring-2 ring-[#315c50]' : 'opacity-75 hover:opacity-100'}`}>{item.contentType.startsWith('video/') ? <video src={item.id.startsWith('https://') ? item.id : `/api/media/${item.id}`} className="h-full w-full object-cover" /> : <img src={item.id.startsWith('https://') ? item.id : `/api/media/${item.id}`} alt={`${listing.title} thumbnail ${index + 1}`} className="h-full w-full object-cover" />}</button>)}</div>}</section>
-        <aside className="h-fit border border-[#dedfd7] bg-white p-6 sm:p-8"><div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[.16em] text-[#315c50]"><span className="size-2 rounded-full bg-[#6e9070]" /> Available opportunity</div><h1 className="serif mt-5 text-4xl leading-tight text-[#173b38]">{listing.title}</h1><p className="mt-3 flex items-center gap-2 text-sm text-[#77817a]"><MapPin size={15} /> {location || 'Location on request'}</p><div className="my-7 border-y border-[#e5e7e0] py-5"><p className="text-[10px] font-bold uppercase tracking-[.15em] text-[#838c83]">{listing.purpose === 'For rent' ? 'Rental rate' : listing.purpose === 'For auction' ? 'Auction details' : 'Asking price'}</p><p className="serif mt-2 text-3xl text-[#173b38]">{listing.price || 'Price on request'}</p>{listing.negotiable && <p className="mt-2 text-xs text-[#77817a]">Negotiable</p>}</div><div className="grid grid-cols-2 gap-4"><Fact label="Plot size" value={listing.plotSize ? `${listing.plotSize.toLocaleString()} m²` : 'Not specified'} /><Fact label="Land use" value={listing.zoning || 'Not specified'} /><Fact label="District" value={listing.district || 'Not specified'} /><Fact label="Sector" value={listing.sector || 'Not specified'} /></div><div className="mt-7 flex items-center gap-2 border-t border-[#e5e7e0] pt-5 text-xs font-medium text-[#55705f]"><ShieldCheck size={16} /> Published by AMSI</div></aside>
+  const facts = [
+    ['Category', listing.category],
+    ['Listing type', listing.purpose],
+    ...(listing.reference ? [['Reference', listing.reference]] : []),
+    ...(listing.category === 'Plots / Land' && listing.upi ? [['UPI / land title', listing.upi]] : []),
+  ]
+  const priceLabel = listing.purpose === 'For rent' ? 'Rental rate' : listing.purpose === 'For auction' ? 'Opening bid' : 'Asking price'
+  const description = listing.descriptionEnglish || 'Contact AMSI for more information about this opportunity.'
+  const contactHref = `mailto:info@amsi.rw?subject=${encodeURIComponent(`Inquiry: ${listing.title}`)}`
+
+  return <main className="listing-detail" data-sample={listing.isSample ? 'true' : 'false'}>
+    <header className="listing-detail__header">
+      <div className="container-fluid listing-detail__container d-flex align-items-center justify-content-between">
+        <Link href="/" className="listing-detail__brand">AMSI <span>&amp; Co.</span></Link>
+        <div className="d-flex align-items-center gap-2">
+          <button type="button" onClick={shareListing} aria-label="Share listing" className="listing-detail__icon-button"><Share2 size={17} /></button>
+          <button type="button" onClick={() => setSaved(value => !value)} aria-label={saved ? 'Remove from saved listings' : 'Save listing'} className={`listing-detail__icon-button ${saved ? 'is-saved' : ''}`}><Heart size={17} fill={saved ? 'currentColor' : 'none'} /></button>
+          <Link href="/" className="listing-detail__back"><ArrowLeft size={15} /><span>Marketplace</span></Link>
+        </div>
       </div>
-      <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_320px]"><section className="border border-[#dedfd7] bg-white p-6 sm:p-9"><p className="eyebrow">Property record</p><h2 className="serif mt-2 text-3xl text-[#173b38]">Plot information</h2><div className="mt-7 grid gap-x-10 gap-y-5 border-y border-[#e5e7e0] py-6 sm:grid-cols-2"><Fact label="Category" value={listing.category} /><Fact label="Listed as" value={listing.purpose} /><Fact label="District" value={listing.district} /><Fact label="Sector" value={listing.sector} /><Fact label="Area" value={listing.area || 'Not specified'} /><Fact label="Reference" value={listing.reference || 'Not specified'} /><Fact label="UPI / Land title" value={listing.upi || 'Not provided'} /><Fact label="Zoning" value={listing.zoning || 'Not specified'} /><Fact label="Plot size" value={listing.plotSize ? `${listing.plotSize.toLocaleString()} m²` : 'Not specified'} /></div>{listing.features.length > 0 && <div className="border-b border-[#e5e7e0] py-6"><h3 className="serif text-2xl text-[#173b38]">Features</h3><div className="mt-4 grid gap-3 sm:grid-cols-2">{listing.features.map(feature => <p key={feature} className="flex items-center gap-2 text-sm text-[#52625b]"><Check size={15} className="text-[#0a486f]" /> {feature}</p>)}</div></div>}<div className="grid gap-8 py-7 sm:grid-cols-2"><div><h3 className="serif text-2xl text-[#173b38]">More details</h3><p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#5c695f]">{listing.descriptionEnglish || 'Additional details are available on request.'}</p></div>{listing.descriptionKinyarwanda && <div><h3 className="serif text-2xl text-[#173b38]">Ibisobanuro</h3><p className="mt-4 whitespace-pre-line text-sm leading-7 text-[#5c695f]">{listing.descriptionKinyarwanda}</p></div>}</div></section><aside className="h-fit bg-[#e8e9e1] p-6 sm:p-7"><p className="eyebrow">A considered next step</p><h3 className="serif mt-3 text-2xl leading-tight text-[#173b38]">Interested in this opportunity?</h3><p className="mt-3 text-sm leading-6 text-[#657169]">Contact AMSI to arrange a viewing or request more information.</p><a href={`mailto:info@amsi.rw?subject=${encodeURIComponent(`Inquiry: ${listing.title}`)}`} className="mt-6 flex items-center justify-between bg-[#173b38] px-4 py-3.5 text-sm font-bold text-white">Request information <ArrowUpRight size={16} /></a><p className="mt-4 text-xs leading-5 text-[#7b857d]">Reference {listing.reference || listing.slug} · {listing.media.length} photos and videos</p></aside></div>
+    </header>
+
+    <div className="container-fluid listing-detail__container listing-detail__main">
+      <div className="listing-detail__eyebrow"><span>{listing.category}</span><span aria-hidden="true">/</span><span>{listing.purpose}</span>{listing.isSample && <span className="listing-detail__sample">Sample</span>}</div>
+      <div className="row align-items-end gy-2 mb-3">
+        <div className="col-12 col-md"><h1 className="serif listing-detail__title">{listing.title}</h1><p className="listing-detail__location"><MapPin size={16} /> {location || 'Location on request'}</p></div>
+        <div className="col-12 col-md-auto"><span className="listing-detail__reference">REF {listing.reference || 'ON REQUEST'}</span></div>
+      </div>
+
+      <div className="row g-3">
+        <section className="col-12 col-lg-8" aria-label="Listing photos">
+          <div className="listing-detail__gallery">
+            {active ? active.contentType.startsWith('video/')
+              ? <video key={active.id} src={active.id.startsWith('https://') ? active.id : `/api/media/${active.id}`} controls className="listing-detail__hero-media" />
+              : <img src={active.id.startsWith('https://') ? active.id : `/api/media/${active.id}`} alt={`${listing.title}, view ${activeMedia + 1}`} className="listing-detail__hero-media" />
+              : <div className="listing-detail__placeholder"><Building2 size={46} /><span>Images for this opportunity are coming soon</span></div>}
+            {media.length > 1 && <>
+              <button aria-label="Previous media" onClick={() => setActiveMedia(index => (index + media.length - 1) % media.length)} className="listing-detail__gallery-arrow listing-detail__gallery-arrow--previous"><ChevronLeft size={20} /></button>
+              <button aria-label="Next media" onClick={() => setActiveMedia(index => (index + 1) % media.length)} className="listing-detail__gallery-arrow listing-detail__gallery-arrow--next"><ChevronRight size={20} /></button>
+              <span className="listing-detail__gallery-count">{activeMedia + 1} / {media.length}</span>
+            </>}
+          </div>
+          {media.length > 1 && <div className="listing-detail__thumbnails">{media.map((item, index) => <button key={item.id} type="button" onClick={() => setActiveMedia(index)} aria-label={`Show photo ${index + 1}`} aria-pressed={activeMedia === index} className="listing-detail__thumbnail">{item.contentType.startsWith('video/') ? <video src={item.id.startsWith('https://') ? item.id : `/api/media/${item.id}`} /> : <img src={item.id.startsWith('https://') ? item.id : `/api/media/${item.id}`} alt="" />}</button>)}</div>}
+        </section>
+
+        <aside className="col-12 col-lg-4">
+          <div className="listing-detail__offer">
+            <div className="listing-detail__offer-status"><span /> {listing.isSample ? 'Sample listing' : 'Available opportunity'}</div>
+            <p className="listing-detail__price-label">{priceLabel}</p>
+            <p className="listing-detail__price">{listing.price || 'Price on request'}</p>
+            {listing.negotiable && <span className="listing-detail__negotiable">Negotiable</span>}
+            <a href={contactHref} className="btn listing-detail__primary"><span>Request information</span><ArrowUpRight size={17} /></a>
+          </div>
+          <div className="listing-detail__sidefacts">
+            <div><span>Location</span><strong>{location || 'On request'}</strong></div>
+            {listing.plotSize > 0 && <div><span>Plot size</span><strong>{listing.plotSize.toLocaleString()} m²</strong></div>}
+            {listing.zoning && <div><span>Land use</span><strong>{listing.zoning}</strong></div>}
+          </div>
+        </aside>
+      </div>
+
+      <section className="listing-detail__about">
+        <p className="eyebrow">Description</p>
+        <h2 className="serif">About this listing</h2>
+        <div className="listing-detail__about-copy"><p>{description}</p>{!listing.isSample && listing.descriptionKinyarwanda && <div className="listing-detail__kinyarwanda"><h3 className="serif">Ibisobanuro</h3><p>{listing.descriptionKinyarwanda}</p></div>}</div>
+        {listing.features.length > 0 && <div className="listing-detail__features"><h3 className="serif">Highlights</h3><div className="row g-2">{listing.features.map(feature => <div key={feature} className="col-12 col-sm-6"><span><Check size={15} /> {feature}</span></div>)}</div></div>}
+      </section>
+
+      <section className="listing-detail__specs" aria-label="Listing specifications">
+        <div className="listing-detail__specs-heading"><p className="eyebrow">Specifications</p><h2 className="serif">Listing details</h2></div>
+        <div className="row row-cols-2 row-cols-md-3 row-cols-xl-5 g-3">{facts.map(([label, value]) => <div className="col" key={label}><Fact label={label} value={value} /></div>)}</div>
+      </section>
     </div>
-    {notice && <div role="status" className="fixed bottom-5 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 bg-[#173b38] px-5 py-3 text-sm text-white shadow-xl"><Check size={16} className="text-[#e8d5a7]" /> {notice}<button onClick={() => setNotice('')} aria-label="Dismiss notice"><X size={15} /></button></div>}
+    {notice && <div role="status" className="listing-detail__notice"><Check size={16} /> {notice}<button onClick={() => setNotice('')} aria-label="Dismiss notice"><X size={15} /></button></div>}
   </main>
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
-  return <div><p className="text-[10px] font-bold uppercase tracking-[.13em] text-[#879087]">{label}</p><p className="mt-1 text-sm font-semibold text-[#344d40]">{value}</p></div>
+  return <div className="listing-detail__fact"><span>{label}</span><strong>{value}</strong></div>
 }
