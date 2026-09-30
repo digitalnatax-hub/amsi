@@ -14,13 +14,13 @@
   --radius-xl: 1.25rem;
 }
 
-:root { --background: #f8f9fa; --foreground: #131511; --border: #d8e1e8; --ring: #0a486f; --font-interface: var(--font-rubik), sans-serif; --font-display: var(--font-rubik), sans-serif; }
+:root { --background: #f8f9fa; --foreground: #131511; --border: #d8e1e8; --ring: #0a486f; --font-interface: var(--font-rubik), sans-serif; --font-display: Georgia, 'Times New Roman', serif; }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-interface), sans-serif; font-weight: 400; }
 button, input, textarea { font: inherit; }
 button { cursor: pointer; }
-.serif { font-family: var(--font-display), sans-serif; font-weight: 500; }
+.serif { font-family: var(--font-display); font-weight: 500; }
 .eyebrow { color: #0a486f; font-size: 10px; font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
 .field { width: 100%; border: 1px solid #dce2d8; border-radius: .75rem; background: #fafbf9; padding: .85rem 1rem; font-size: .875rem; color: #16202a; outline: none; }
 .field:focus { border-color: #0a486f; box-shadow: 0 0 0 3px #0a486f22; }
@@ -28,10 +28,23 @@ button { cursor: pointer; }
 .modal-card { position: relative; width: 100%; max-height: calc(100vh - 2rem); overflow-y: auto; border-radius: 1.25rem; background: #fff; padding: 2rem; box-shadow: 0 24px 80px #06100866; }
 .admin-action { display: flex; width: 100%; align-items: center; justify-content: space-between; border-radius: .65rem; background: #f3f6f1; padding: .75rem .85rem; font-size: .8rem; font-weight: 600; color: #3c553d; transition: background .2s; }
 .admin-action:hover { background: #e7eee2; }
-#top { min-height: 540px; padding-top: 7rem; padding-bottom: 2.5rem; }
-#top h1 { font-size: 3rem; line-height: .95; }
-#top h1 + p { margin-top: 1.5rem; }
-#top h1 + p + div { margin-top: 2rem; }
+#top { min-height: 500px; padding: 5.5rem 0 1.25rem; background-color: #0a486f; }
+#top h1 { font-size: 2.25rem; line-height: .98; }
+#top h1 + p { margin-top: .75rem; font-size: .875rem; line-height: 1.5; }
+#top h1 + p + div { margin-top: 1rem; }
+#top > div.hero-layout { gap: 1.25rem; }
+#top h1 em { color: #fff; }
+#top .hero-layout > div:first-child > div:last-child > a { background-color: #fff; color: #0a486f; }
+#top .market-pulse > div:first-child > span:last-child { color: #fff; }
+#top .market-pulse > div:first-child > span:last-child > span { background-color: #fff; }
+main > header > div:first-child { height: 3.25rem; padding-block: 0 !important; }
+main > header > div:first-child > a > span:first-child { width: 2rem; height: 2rem; }
+main > header > div:first-child > div button { padding: .4rem .75rem; font-size: .68rem; }
+#top > div.hero-layout > div:first-child > div:last-child { gap: .5rem; }
+#top > div.hero-layout > div:first-child > div:last-child > :is(a, button) { padding: .65rem .9rem; font-size: .75rem; }
+#marketplace article.group { border-color: #dce4e5; border-radius: 8px; box-shadow: 0 5px 18px rgb(6 47 74 / 6%); }
+#marketplace article.group:hover { box-shadow: 0 16px 34px rgb(6 47 74 / 14%); }
+#marketplace article.group > div:last-child { padding: 1.25rem; }
 main[data-dashboard] { background-color: #f8f9fa; background-image: repeating-linear-gradient(0deg, rgb(10 72 111 / 2%) 0, rgb(10 72 111 / 2%) 1px, transparent 1px, transparent 30px); }
 main[data-dashboard="admin"] [class~="bg-[#173b38]"] { background-color: #0a486f; }
 main[data-dashboard="admin"] [class~="text-[#173b38]"] { color: #062f4a; }
@@ -52,8 +65,11 @@ main[data-dashboard="admin"] aside[class*="bg-[#173b38]"] { border-radius: 8px; 
 .admin-nav-scroll::-webkit-scrollbar-track { background: transparent; }
 .admin-nav-scroll::-webkit-scrollbar-thumb { border-radius: 4px; background: #c29f55; }
 @media (max-width: 640px) { .modal-card { padding: 1.35rem; } }
-@media (min-width: 640px) { #top h1 { font-size: 3.75rem; } }
+@media (min-width: 640px) { #top h1 { font-size: 3.5rem; } }
 @media (min-width: 1024px) {
-  #top { min-height: 600px; padding-top: 7rem; padding-bottom: 3rem; }
-  #top h1 { font-size: 5.5rem; }
+  #top > div.hero-layout { gap: 2rem; }
+  #top { min-height: 570px; padding-top: 5.5rem; padding-bottom: 1.5rem; }
+  #top h1 { font-size: 4.5rem; }
+  #top h1 + p { font-size: 1rem; line-height: 1.75; }
+  #top h1 + p + div { margin-top: 1.25rem; }
 }
