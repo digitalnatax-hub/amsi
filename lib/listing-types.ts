@@ -25,6 +25,8 @@ export type MarketplaceListing = {
   descriptionEnglish: string
   descriptionKinyarwanda: string
   media: ListingMedia[]
+  imageUrl?: string
+  isSample?: boolean
   status: 'published' | 'draft'
   createdAt: string
 }

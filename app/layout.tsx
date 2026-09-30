@@ -10,6 +10,13 @@ const rubik = localFont({
   display: 'swap',
 })
 
+const fraunces = localFont({
+  src: '../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-full-normal.woff2',
+  weight: '300 900',
+  variable: '--font-fraunces',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: 'AMSI | Access more. Move well.',
   description: 'A private marketplace for exceptional properties, vehicles, auctions and trusted consultancy across East Africa.',
@@ -48,7 +55,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${rubik.variable} antialiased`}>
+      <body className={`${rubik.variable} ${fraunces.variable} antialiased`}>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
