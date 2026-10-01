@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowUpRight, Crown, X } from 'lucide-react'
 
-export function AccountModal({ mode, setMode, onClose, notice }: { mode: 'login' | 'signup'; setMode: (mode: 'login' | 'signup') => void; onClose: () => void; notice: string }) {
+export function AccountModal({ mode, setMode, onClose, notice, next }: { mode: 'login' | 'signup'; setMode: (mode: 'login' | 'signup') => void; onClose: () => void; notice: string; next?: string }) {
   const router = useRouter()
   const [fullName, setFullName] = useState('')
   const [phone, setPhone] = useState('')
@@ -32,7 +32,9 @@ export function AccountModal({ mode, setMode, onClose, notice }: { mode: 'login'
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Unable to authenticate.')
       onClose()
-      router.push(mode === 'signup' || result.role === 'member' ? '/dashboard' : '/admin')
+      const fallback = mode === 'signup' || result.role === 'member' ? '/dashboard' : '/admin'
+      const destination = result.role === 'member' && next?.startsWith('/') && !next.startsWith('//') && !next.includes('\\') ? next : fallback
+      router.push(destination)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : 'Unable to authenticate.')
     } finally {

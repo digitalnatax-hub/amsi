@@ -2,6 +2,7 @@
 
 import { use, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { gsap } from 'gsap'
 import { ArrowLeft, ArrowUpRight, Building2, Check, ChevronLeft, ChevronRight, Heart, MapPin, Share2, X } from 'lucide-react'
 import type { MarketplaceListing } from '@/lib/listing-types'
@@ -11,13 +12,16 @@ type Listing = MarketplaceListing & { id: string }
 
 export default function ListingDetail({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
+  const router = useRouter()
   const [listing, setListing] = useState<Listing | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeMedia, setActiveMedia] = useState(0)
   const [saved, setSaved] = useState(false)
   const [notice, setNotice] = useState('')
+  const [contactBusy, setContactBusy] = useState(false)
   const detailRef = useRef<HTMLElement | null>(null)
   const priorMedia = useRef(activeMedia)
+  const contactStarted = useRef(false)
 
   useEffect(() => {
     if (loading || !listing || !detailRef.current) return
@@ -59,6 +63,12 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
       .finally(() => setLoading(false))
   }, [slug])
 
+  useEffect(() => {
+    if (!listing || contactStarted.current || new URLSearchParams(window.location.search).get('contact') !== '1') return
+    contactStarted.current = true
+    void requestInformation()
+  }, [listing?.id])
+
   const media = listing ? listing.media.length > 0 ? listing.media : listing.imageUrl ? [{ id: listing.imageUrl, name: listing.title, contentType: 'image/jpeg' }] : [] : []
   const active = media[activeMedia]
   const location = listing ? [listing.district, listing.sector, listing.area].filter(Boolean).join(' · ') : ''
@@ -72,6 +82,36 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
     }
   }
 
+  async function requestInformation() {
+    if (!listing || contactBusy) return
+    setContactBusy(true)
+    try {
+      const session = await fetch('/api/users/session')
+      if (!session.ok) {
+        const next = `${window.location.pathname}?contact=1`
+        router.push(`/?signin=1&next=${encodeURIComponent(next)}`)
+        return
+      }
+
+      const response = await fetch('/api/users/requests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId: listing.id }),
+      })
+      const result = await response.json()
+      if (response.status === 401) {
+        const next = `${window.location.pathname}?contact=1`
+        router.push(`/?signin=1&next=${encodeURIComponent(next)}`)
+        return
+      }
+      if (!response.ok) throw new Error(result.error || 'Unable to start a conversation.')
+      router.push(`/dashboard?section=Messages&message=${encodeURIComponent(result.id)}`)
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Unable to start a conversation.')
+      setContactBusy(false)
+    }
+  }
+
   if (loading) return <main className="listing-detail__state"><div className="listing-detail__loading" role="status"><span className="listing-detail__spinner" aria-hidden="true" /><span>Preparing this opportunity…</span></div></main>
   if (!listing) return <main className="listing-detail"><header className="listing-detail__header"><div className="container-fluid listing-detail__container listing-detail__header-inner"><Link href="/" className="listing-detail__brand">AMSI <span>&amp; Co.</span></Link><Link href="/" className="btn btn-outline-light"><ArrowLeft size={16} /> Marketplace</Link></div></header><div className="container-fluid listing-detail__container py-5"><section className="listing-detail__empty card"><Building2 size={34} /><p className="eyebrow mt-4">Opportunity unavailable</p><h1 className="serif">We couldn't find this listing.</h1><p>{notice || 'It may have been removed or is not published.'}</p><Link href="/" className="btn btn-primary btn-amsi-primary">Browse marketplace <ArrowUpRight size={16} /></Link></section></div></main>
 
@@ -82,7 +122,6 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
   const priceLabel = listing.purpose === 'For rent' ? 'Rental rate' : listing.purpose === 'For auction' ? 'Opening bid' : 'Asking price'
   const displayPrice = listing.price ? formatListingPrice(listing.price) : 'Price on request'
   const description = listing.descriptionEnglish || 'Contact AMSI for more information about this opportunity.'
-  const contactHref = `mailto:info@amsi.rw?subject=${encodeURIComponent(`Inquiry: ${listing.title}`)}`
 
   return <main ref={detailRef} className="listing-detail" data-sample={listing.isSample ? 'true' : 'false'}>
     <header className="listing-detail__header">
@@ -125,7 +164,7 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
           <div className="listing-detail__offer card">
             <div className="listing-detail__offer-status"><span /> {listing.isSample ? 'Sample opportunity' : 'Available opportunity'}</div>
             <div className="listing-detail__offer-price"><p className="listing-detail__price-label">{priceLabel}</p><p className="listing-detail__price">{displayPrice}</p>{listing.negotiable && <span className="listing-detail__negotiable">Negotiable</span>}</div>
-            <a href={contactHref} className="btn btn-primary btn-amsi-primary listing-detail__primary"><span>Request information</span><ArrowUpRight size={17} /></a>
+            <button type="button" onClick={() => void requestInformation()} disabled={contactBusy} className="btn btn-primary btn-amsi-primary listing-detail__primary"><span>{contactBusy ? 'Opening conversation...' : 'Request information'}</span><ArrowUpRight size={17} /></button>
             <div className="listing-detail__sidefacts">
               {listing.plotSize > 0 && <div><span>Plot size</span><strong>{listing.plotSize.toLocaleString()} m²</strong></div>}
               {listing.zoning && <div><span>Land use</span><strong>{listing.zoning}</strong></div>}

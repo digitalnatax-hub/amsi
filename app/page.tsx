@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { AccountModal } from '@/components/account-modal'
-import { AdvisorChat } from '@/components/advisor-chat'
+import { openAmsiAssistant } from '@/components/assistant-launcher'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { gsap } from 'gsap'
 import {
@@ -54,7 +54,7 @@ export default function Page() {
   const [mode, setMode] = useState<Mode>('All')
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
-  const [advisorOpen, setAdvisorOpen] = useState(false)
+  const [authNext, setAuthNext] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [notice, setNotice] = useState('')
@@ -126,8 +126,10 @@ export default function Page() {
   }, [])
 
   useEffect(() => {
-    if (new URLSearchParams(window.location.search).get('signin') !== '1') return
+    const search = new URLSearchParams(window.location.search)
+    if (search.get('signin') !== '1') return
     setAuthMode('login')
+    setAuthNext(search.get('next') || '')
     setAuthOpen(true)
     window.history.replaceState(null, '', '/')
   }, [])
@@ -176,7 +178,7 @@ export default function Page() {
   const contentAds = ads.filter(ad => ['wide-post', 'medium-rectangle', 'large-rectangle', 'half-page'].includes(ad.placement))
 
   function openConsultant() {
-    setAdvisorOpen(true)
+    openAmsiAssistant()
   }
 
   async function toggleFavorite(listingId: string) {
@@ -294,7 +296,7 @@ export default function Page() {
           </div>
           <div className="home-page__service-actions">
             <button onClick={openConsultant} className="btn btn-primary btn-amsi-primary">Talk with a consultant <ArrowUpRight size={16} /></button>
-            <button onClick={() => setAdvisorOpen(true)} className="btn btn-link home-page__advisor-link"><Sparkles size={16} /> Ask the AMSI assistant</button>
+            <button onClick={openAmsiAssistant} className="btn btn-link home-page__advisor-link"><Sparkles size={16} /> Ask the AMSI assistant</button>
           </div>
         </div>
         <div className="home-page__services-image">
@@ -309,8 +311,7 @@ export default function Page() {
       <footer className="bg-[#0a486f] px-5 py-12 text-white lg:px-12"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-10 md:flex-row"><div><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 text-white"><Crown size={15} /></span><span className="serif text-xl font-semibold text-white">AMSI <span className="text-white/75">&amp; Co.</span></span></div><p className="mt-4 max-w-xs text-sm leading-6 text-white/50">A considered marketplace for exceptional living, investing and moving forward.</p></div><div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm text-white/55"><a href="#marketplace" className="hover:text-white">Marketplace</a><a href="#auctions" className="hover:text-white">Auctions</a><a href="#services" className="hover:text-white">Consultancy</a><a href="#about" className="hover:text-white">Our partners</a></div></div><div className="mx-auto mt-12 max-w-[1440px] border-t border-white/10 pt-5 text-xs text-white/60">© 2026 AMSI All rights reserved.</div></footer>
 
       {notice && <div role="status" className="fixed left-1/2 top-24 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-[#0a486f] px-5 py-3 text-sm text-white shadow-xl"><Check className="text-[#f1d88a]" size={17} /> {notice}<button type="button" className="btn btn-link p-1 text-white" aria-label="Dismiss notice" onClick={() => setNotice('')}><X size={15} /></button></div>}
-      {authOpen && <AccountModal mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} notice={notice} />}
-      <AdvisorChat open={advisorOpen} onClose={() => setAdvisorOpen(false)} />
+      {authOpen && <AccountModal mode={authMode} setMode={setAuthMode} onClose={() => { setAuthOpen(false); setAuthNext('') }} notice={notice} next={authNext} />}
     </main>
   )
 }

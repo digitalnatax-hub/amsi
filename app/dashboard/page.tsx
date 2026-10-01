@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Bell, Check, Gavel, Heart, LayoutDashboard, LogOut, MessageCircle, Search, Send } from 'lucide-react'
 import { MyAuctions } from '@/components/my-auctions'
+import { MemberMessages } from '@/components/member-messages'
 import { SavedListings } from '@/components/saved-listings'
 import { ProfileForm } from '@/components/profile-form'
 import { useTimeGreeting } from '@/lib/time-greeting'
@@ -21,10 +22,18 @@ export default function UserDashboard() {
   const [siteName, setSiteName] = useState('AMSI & Co.')
   const [logoImage, setLogoImage] = useState('')
   const [checkingSession, setCheckingSession] = useState(true)
+  const [initialMessageId, setInitialMessageId] = useState('')
   const [savedCount, setSavedCount] = useState(0)
   const [consultationCount, setConsultationCount] = useState(0)
   const [auctionCount, setAuctionCount] = useState(0)
   const nav = ['Overview', 'Saved listings', 'My auctions', 'Messages', 'Consultancy', 'Profile']
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('section') !== 'Messages') return
+    setSection('Messages')
+    setInitialMessageId(params.get('message') || '')
+    window.history.replaceState(null, '', '/dashboard')
+  }, [])
   useEffect(() => {
     fetch('/api/users/session')
       .then(async response => {
@@ -72,7 +81,7 @@ export default function UserDashboard() {
         {section === 'Overview' && <><div className="mt-8 grid gap-4 sm:grid-cols-3"><Stat icon={<Heart />} value={String(savedCount)} label="Saved listings"/><Stat icon={<MessageCircle />} value={String(consultationCount)} label="Consultancy requests"/><Stat icon={<Gavel />} value={String(auctionCount)} label="Auction entries"/></div><div className="mt-8 grid gap-6 xl:grid-cols-[1.1fr_.9fr]"><div className="rounded-xl border border-[#d8e1e8] bg-white p-5"><div className="flex items-center justify-between"><h2 className="font-semibold text-[#0a486f]">Saved opportunities</h2><button onClick={() => setSection('Saved listings')} className="text-sm font-semibold text-[#0a486f]">View all</button></div><div className="mt-4 space-y-3"><SavedListings compact onViewAll={() => setSection('Saved listings')} /></div></div><div className="rounded-xl bg-[#0a486f] p-6 text-white"><Gavel size={20}/><p className="mt-6 text-xs uppercase tracking-widest text-white/65">Auction activity</p><p className="mt-2 text-3xl font-bold">{auctionCount} tracked lots</p><p className="mt-2 text-sm text-white/70">Your entries, recorded bids, and standing</p><button onClick={() => setSection('My auctions')} className="mt-5 rounded-lg bg-white px-4 py-2 text-sm font-bold text-[#0a486f]">View activity</button></div></div></>}
         {section === 'My auctions' && <MyAuctions />}
         {section === 'Saved listings' && <SavedListings />}
-        {section === 'Messages' && <ContactForm kind="message" />}
+        {section === 'Messages' && <MemberMessages initialRequestId={initialMessageId} />}
         {section === 'Consultancy' && <ContactForm kind="consultancy" />}
         {section === 'Profile' && <ProfileForm fullName={fullName} email={email} phone={phone} profileImage={profileImage} onSaved={profile => { setFullName(profile.fullName); setEmail(profile.email); setPhone(profile.phone); setProfileImage(profile.profileImage) }} />}
         {section !== 'Overview' && section !== 'My auctions' && section !== 'Saved listings' && section !== 'Messages' && section !== 'Consultancy' && section !== 'Profile' && <div className="mt-8 rounded-xl border border-dashed border-[#bdcdd8] bg-white p-12 text-center"><Search className="mx-auto text-[#0a486f]"/><h2 className="mt-4 text-xl font-semibold text-[#0a486f]">{section === 'Profile' ? 'Your profile is verified' : `No ${section.toLowerCase()} yet`}</h2><p className="mt-2 text-sm text-[#718595]">{section === 'Profile' ? 'Your account details will appear here.' : 'No saved opportunities yet.'}</p></div>}

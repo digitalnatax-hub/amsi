@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       .sort({ createdAt: -1 })
       .limit(200)
       .toArray()
-    return NextResponse.json(records.map(({ _id, ...record }) => ({ ...record, id: _id.toString() })))
+    return NextResponse.json(records.map(({ _id, ownerUserId, ...record }) => ({ ...record, id: _id.toString(), isAccountOwned: Boolean(ownerUserId) })))
   } catch (error) {
     const detail = error instanceof Error ? error.message : 'Unable to load requests.'
     return NextResponse.json({ error: detail }, { status: 503 })
