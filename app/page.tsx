@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { AccountModal } from '@/components/account-modal'
 import { AdvisorChat } from '@/components/advisor-chat'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { gsap } from 'gsap'
 import {
   ArrowUpRight,
   Bell,
@@ -65,6 +66,37 @@ export default function Page() {
   const [listingsLoading, setListingsLoading] = useState(true)
   const [brand, setBrand] = useState({ siteName: 'AMSI & Co.', logoImage: '' })
   const [ads, setAds] = useState<Ad[]>([])
+  const homeRef = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const root = homeRef.current
+    if (!root) return
+    const motion = gsap.matchMedia(root)
+    motion.add('(prefers-reduced-motion: no-preference)', () => {
+      const context = gsap.context(() => {
+        gsap.timeline({ defaults: { ease: 'power3.out' } })
+          .from('.home-page__hero-kicker', { autoAlpha: 0, y: 12, duration: 0.28 })
+          .from('.home-page__hero-title', { autoAlpha: 0, y: 18, duration: 0.42 }, '-=0.08')
+          .from('.home-page__hero-copy', { autoAlpha: 0, y: 10, duration: 0.32 }, '-=0.16')
+          .from('.home-page__hero-actions', { autoAlpha: 0, y: 8, duration: 0.3 }, '-=0.14')
+        gsap.fromTo('.home-page__hero-media', { scale: 1.025 }, { scale: 1, duration: 0.9, ease: 'power2.out' })
+      }, root)
+      return () => context.revert()
+    })
+    return () => motion.revert()
+  }, [])
+
+  useEffect(() => {
+    if (!menuOpen || !homeRef.current) return
+    const panel = homeRef.current.querySelector('.home-page__mobile-menu')
+    if (!panel) return
+    const motion = gsap.matchMedia(homeRef.current)
+    motion.add('(prefers-reduced-motion: no-preference)', () => {
+      const tween = gsap.fromTo(panel, { autoAlpha: 0, y: -8 }, { autoAlpha: 1, y: 0, duration: 0.24, ease: 'power2.out' })
+      return () => tween.kill()
+    })
+    return () => motion.revert()
+  }, [menuOpen])
 
   useEffect(() => {
     fetch('/api/listings')
@@ -173,10 +205,10 @@ export default function Page() {
   }
 
   return (
-    <main className="home-page min-h-screen overflow-hidden bg-[#f8f9fa] text-[#131511]">
-      <div className="home-page__banner">PRIVATE ACCESS · CURATED OPPORTUNITIES · RWANDA & EAST AFRICA</div>
-      <header className="home-page__header navbar absolute left-0 right-0 top-9 z-30 text-white backdrop-blur-md">
-        <div className="home-page__nav-inner mx-auto flex max-w-[1440px] items-center justify-between px-5 py-2 lg:px-12">
+    <main ref={homeRef} className="home-page min-h-screen bg-[#f8f9fa] text-[#131511]">
+      <div className="home-page__banner">RWANDA · EAST AFRICA</div>
+      <header className="home-page__header navbar text-white">
+        <div className="home-page__nav-inner mx-auto flex max-w-[1440px] items-center justify-between px-5 lg:px-12">
           <a href="#top" className="home-page__brand flex items-center gap-3"><span className="home-page__brand-mark">{brand.logoImage ? <img src={brand.logoImage} alt="" className="h-full w-full object-contain" /> : <Crown size={17} />}</span><span className="serif text-xl tracking-wide text-white">{brand.siteName}</span></a>
           <nav className="home-page__nav-links nav hidden items-center gap-2 lg:flex" aria-label="Main navigation"><a href="#marketplace" className="nav-link home-page__nav-link">Marketplace</a><a href="#auctions" className="nav-link home-page__nav-link">Live auctions</a><a href="#services" className="nav-link home-page__nav-link">Consultancy</a><a href="#about" className="nav-link home-page__nav-link">About us</a></nav>
           <div className="home-page__nav-actions hidden items-center gap-2 lg:flex"><button onClick={openConsultant} className="btn btn-outline-light btn-amsi-nav">Talk to a consultant</button><button onClick={() => setAuthOpen(true)} className="btn btn-light btn-amsi-nav-primary"><UserRound size={15} /> Sign in</button></div>
@@ -185,9 +217,26 @@ export default function Page() {
         {menuOpen && <div className="home-page__mobile-menu px-5 py-5 lg:hidden"><nav className="nav flex-column gap-2" aria-label="Mobile navigation"><a href="#marketplace" className="nav-link home-page__nav-link" onClick={() => setMenuOpen(false)}>Marketplace</a><a href="#auctions" className="nav-link home-page__nav-link" onClick={() => setMenuOpen(false)}>Live auctions</a><a href="#services" className="nav-link home-page__nav-link" onClick={() => setMenuOpen(false)}>Consultancy</a><a href="#about" className="nav-link home-page__nav-link" onClick={() => setMenuOpen(false)}>About us</a><button onClick={openConsultant} className="btn btn-light btn-amsi-nav-primary mt-2 w-100"><MessageCircle size={14} /> Talk to a consultant</button><button onClick={() => setAuthOpen(true)} className="btn btn-outline-light btn-amsi-nav mt-2 w-100"><UserRound size={15} /> Sign in</button></nav></div>}
       </header>
 
-      <section id="top" className="relative flex min-h-[500px] flex-col justify-center overflow-hidden bg-[#0a486f] pb-6 pt-28 text-white lg:min-h-[570px] lg:pb-8">
-        {!heroAd && <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=2200&q=90')] bg-cover bg-center opacity-55" />}{heroAd && <AdvertisementCreative ad={heroAd} hero />}<div className="absolute inset-0 bg-gradient-to-r from-[#07324fdd] via-[#0a486f99] to-transparent" /><div className="absolute inset-0 bg-gradient-to-t from-[#0a486f] via-transparent to-[#0a486f33]" />{heroAd && <span className="absolute right-5 top-28 z-10 bg-[#062f4a]/75 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[.16em] text-white/75">Sponsored</span>}
-        <div className="hero-layout container-fluid relative z-10 mx-auto grid w-full max-w-[1440px] gap-6 px-5 lg:grid-cols-[1fr_390px] lg:px-12"><div className="max-w-3xl"><div className="mb-3 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.2em] text-white"><span className="h-px w-8 bg-white" /> Rwanda's marketplace for what's next</div><h1 className="serif max-w-3xl text-5xl leading-[0.98] sm:text-6xl lg:text-7xl">Find your next<br /><em className="font-normal text-[#f1d88a]">big move.</em></h1><p className="mt-4 max-w-xl text-sm leading-6 text-white/85 sm:text-base">Buy, rent, sell or bid on homes, land, vehicles and more, all in one trusted place.</p><div className="mt-5 flex flex-wrap gap-3"><a href="#marketplace" className="btn btn-amsi-gold group inline-flex items-center gap-2">Explore listings <ArrowUpRight size={16} className="transition group-hover:translate-x-1 group-hover:-translate-y-1" /></a><button onClick={openConsultant} className="btn btn-outline-light btn-amsi-hero-secondary"><MessageCircle size={16} /> Sell with AMSI</button></div></div><div className="market-pulse hidden self-end rounded-xl border border-white/25 bg-[#082f47]/75 p-5 backdrop-blur-md lg:block"><div className="mb-5 flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/90">A market in motion</span><span className="flex items-center gap-1 text-xs text-[#d6e8cf]"><span className="h-2 w-2 rounded-full bg-[#d6e8cf]" /> Live</span></div><div className="grid grid-cols-2 gap-y-5"><div><p className="serif text-3xl font-semibold text-white">{listings.length.toLocaleString()}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">Available listings</p></div><div><p className="serif text-3xl font-semibold text-white">{auctions.length}</p><p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-white/70">Live auctions</p></div><div className="col-span-2 border-t border-white/15 pt-4"><p className="text-xs leading-5 text-white/75">From a new home to your next investment, start with the right opportunity.</p></div></div></div></div>
+      <section id="top" className="home-page__hero">
+        {!heroAd && <div className="home-page__hero-media absolute inset-0 bg-[url('https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=2200&q=90')] bg-cover bg-center" />}
+        {heroAd && <div className="home-page__hero-media absolute inset-0"><AdvertisementCreative ad={heroAd} hero /></div>}
+        <div className="home-page__hero-overlay" />
+        {heroAd && <span className="home-page__sponsored">Sponsored</span>}
+        <div className="home-page__hero-inner">
+          <div className="home-page__hero-content">
+            <p className="home-page__hero-kicker"><span /> Rwanda's marketplace for what's next</p>
+            <h1 className="home-page__hero-title serif">Find your next<br /><em>big move.</em></h1>
+            <p className="home-page__hero-copy">Homes, land, vehicles and auctions across Rwanda.</p>
+            <div className="home-page__hero-actions">
+              <a href="#marketplace" className="btn btn-amsi-gold">Explore listings <ArrowUpRight size={16} /></a>
+              <button onClick={openConsultant} className="btn btn-amsi-hero-secondary">Sell with AMSI <ArrowUpRight size={15} /></button>
+            </div>
+          </div>
+          <div className="home-page__hero-index" aria-label="Marketplace categories">
+            <span>Properties</span><span>Vehicles</span><span>Auctions</span>
+          </div>
+        </div>
+        <a href="#marketplace" className="home-page__hero-scroll" aria-label="Scroll to the marketplace"><span /> Scroll to explore</a>
       </section>
 
       {leaderboardAds.length > 0 && <section aria-label="Sponsored leaderboard advertisements" className="mx-auto hidden max-w-[1200px] space-y-3 px-5 py-6 md:block">{leaderboardAds.map(ad => <div key={ad.id}><p className="mb-1 text-[9px] font-semibold uppercase tracking-[.16em] text-[#8b9389]">Sponsored</p><AdvertisementCreative ad={ad} /></div>)}</section>}
@@ -234,12 +283,33 @@ export default function Page() {
 
       <section id="auctions" className="auction-section px-5 py-16 lg:px-12"><div className="mx-auto max-w-[1440px]"><div className="auction-section__heading"><div><p className="eyebrow">Private collection</p><h2 className="serif">Auctions worth a closer look</h2><p>Review the lot, terms and timing before you take part.</p></div><div className="auction-section__count"><Gavel size={17} /> <span>{auctions.length} {auctions.length === 1 ? 'lot' : 'lots'} available</span></div></div><div className="auction-grid">{auctions.map(auction => <AuctionCard key={auction.id} auction={auction} />)}{auctions.length === 0 && <div className="auction-section__empty"><span className="auction-section__empty-icon"><Gavel size={23} /></span><h3 className="serif">No auctions are open yet</h3><p>New auction lots will appear here when published.</p></div>}</div></div></section>
 
-      <section id="services" className="mx-auto grid max-w-[1440px] gap-12 px-5 py-24 lg:grid-cols-[1fr_1fr] lg:items-center lg:px-12"><div><p className="eyebrow">Beyond the transaction</p><h2 className="serif mt-4 text-5xl leading-tight text-[#0a486f]">A trusted advisor for your next chapter.</h2><p className="mt-6 max-w-xl text-base leading-7 text-[#6e776d]">Some decisions deserve more than a search bar. Our specialists bring local intelligence, discretion and an uncompromising eye to every property, purchase and investment.</p><div className="mt-8 grid max-w-lg gap-4 sm:grid-cols-2"><Value icon={<ShieldCheck size={18} />} title="Vetted opportunities" /><Value icon={<Sparkles size={18} />} title="Intelligent matching" /><Value icon={<Star size={18} />} title="Private guidance" /><Value icon={<TrendingUp size={18} />} title="Market insight" /></div><button onClick={openConsultant} className="btn btn-primary btn-amsi-primary mt-10">Start a private conversation <ArrowUpRight className="ms-2" size={16} /></button></div><div className="relative overflow-hidden rounded-[2rem] bg-[#0a486f] p-5 sm:p-8"><div className="relative aspect-[4/3] overflow-hidden rounded-[1.25rem] bg-[url('/amsi-consultants.png')] bg-cover bg-center"><div className="absolute inset-0 bg-gradient-to-t from-[#07324fcc] via-transparent" /><div className="absolute bottom-7 left-7 right-7"><p className="text-xs uppercase tracking-[0.2em] text-[#e7cb80]">AMSI intelligence</p><p className="serif mt-2 max-w-md text-3xl text-white">Your ambition, considered from every angle.</p></div></div></div></section>
+      <section id="services" className="home-page__services mx-auto grid max-w-[1440px] gap-12 px-5 py-24 lg:grid-cols-[1fr_1fr] lg:items-center lg:px-12">
+        <div className="home-page__services-copy">
+          <p className="eyebrow">Personal guidance</p>
+          <h2 className="serif mt-4 text-5xl leading-tight text-[#0a486f]">A considered next step, with AMSI.</h2>
+          <p className="mt-6 max-w-xl text-base leading-7 text-[#6e776d]">Talk through a property, purchase or investment with our team, or get help exploring the collection.</p>
+          <div className="mt-8 grid max-w-lg gap-4 sm:grid-cols-2">
+            <Value icon={<ShieldCheck size={18} />} title="Vetted opportunities" />
+            <Value icon={<Sparkles size={18} />} title="Intelligent matching" />
+            <Value icon={<Star size={18} />} title="Private guidance" />
+            <Value icon={<TrendingUp size={18} />} title="Market insight" />
+          </div>
+          <div className="home-page__service-actions">
+            <button onClick={openConsultant} className="btn btn-primary btn-amsi-primary">Talk with a consultant <ArrowUpRight size={16} /></button>
+            <button onClick={() => setAdvisorOpen(true)} className="btn btn-link home-page__advisor-link"><Sparkles size={16} /> Ask the AMSI assistant</button>
+          </div>
+        </div>
+        <div className="home-page__services-image">
+          <div className="home-page__services-image-content">
+            <div className="home-page__services-image-shade" />
+            <div className="home-page__services-image-caption"><span>AMSI &amp; Co.</span><p className="serif">Local expertise for your next move.</p></div>
+          </div>
+        </div>
+      </section>
 
       <section id="about" className="border-t border-[#dfe2da] bg-white px-5 py-14 lg:px-12"><div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-8 sm:flex-row"><div><p className="eyebrow">In trusted company</p><p className="serif mt-3 text-2xl text-[#0a486f]">Chosen by people who choose well.</p></div><div className="flex flex-wrap items-center justify-center gap-8 text-xl font-semibold tracking-tight text-[#9aa198] sm:gap-12"><span>UMUCYO</span><span>IKAZE</span><span className="serif italic">NOVA</span><span>RIVIERA</span></div></div></section>
       <footer className="bg-[#0a486f] px-5 py-12 text-white lg:px-12"><div className="mx-auto flex max-w-[1440px] flex-col justify-between gap-10 md:flex-row"><div><div className="flex items-center gap-3"><span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/80 text-white"><Crown size={15} /></span><span className="serif text-xl font-semibold text-white">AMSI <span className="text-white/75">&amp; Co.</span></span></div><p className="mt-4 max-w-xs text-sm leading-6 text-white/50">A considered marketplace for exceptional living, investing and moving forward.</p></div><div className="grid grid-cols-2 gap-x-12 gap-y-3 text-sm text-white/55"><a href="#marketplace" className="hover:text-white">Marketplace</a><a href="#auctions" className="hover:text-white">Auctions</a><a href="#services" className="hover:text-white">Consultancy</a><a href="#about" className="hover:text-white">Our partners</a></div></div><div className="mx-auto mt-12 max-w-[1440px] border-t border-white/10 pt-5 text-xs text-white/60">© 2026 AMSI All rights reserved.</div></footer>
 
-      <button onClick={() => setAdvisorOpen(true)} className="btn btn-light home-page__advisor fixed bottom-6 right-6 z-20 flex items-center gap-3"><Sparkles size={17} /> Ask our AI advisor</button>
       {notice && <div role="status" className="fixed left-1/2 top-24 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-[#0a486f] px-5 py-3 text-sm text-white shadow-xl"><Check className="text-[#f1d88a]" size={17} /> {notice}<button type="button" className="btn btn-link p-1 text-white" aria-label="Dismiss notice" onClick={() => setNotice('')}><X size={15} /></button></div>}
       {authOpen && <AccountModal mode={authMode} setMode={setAuthMode} onClose={() => setAuthOpen(false)} notice={notice} />}
       <AdvisorChat open={advisorOpen} onClose={() => setAdvisorOpen(false)} />
@@ -317,7 +387,7 @@ function ListingCard({ item, isSaved, onFavorite }: { item: Listing; isSaved: bo
             <p className="listing-card__price-label">{item.purpose === 'For rent' ? 'Rental rate' : item.purpose === 'For auction' ? 'Opening bid' : 'Asking price'}</p>
             <p className="listing-card__price">{item.price ? formatListingPrice(item.price) : 'Price on request'}{item.negotiable ? <span className="ms-1 fw-normal text-secondary">negotiable</span> : null}</p>
           </div>
-          <Link href={`/listing/${item.slug}`} className="btn btn-outline-primary listing-card__view">View <ArrowUpRight size={14} /></Link>
+          <Link href={`/listing/${item.slug}`} className="btn btn-outline-primary listing-card__view">View details <ArrowUpRight size={14} /></Link>
         </div>
         {item.plotSize > 0 && <div className="listing-card__details"><span>{item.plotSize.toLocaleString()} m<sup>2</sup></span><span>{item.zoning || 'Land'}</span>{item.media.length > 0 && <span>{item.media.length} media</span>}</div>}
       </div>

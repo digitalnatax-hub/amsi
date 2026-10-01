@@ -1,7 +1,8 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { gsap } from 'gsap'
 import { ArrowLeft, ArrowUpRight, Building2, Check, ChevronLeft, ChevronRight, Heart, MapPin, Share2, X } from 'lucide-react'
 import type { MarketplaceListing } from '@/lib/listing-types'
 import { formatListingPrice } from '@/lib/format-listing-price'
@@ -15,6 +16,37 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
   const [activeMedia, setActiveMedia] = useState(0)
   const [saved, setSaved] = useState(false)
   const [notice, setNotice] = useState('')
+  const detailRef = useRef<HTMLElement | null>(null)
+  const priorMedia = useRef(activeMedia)
+
+  useEffect(() => {
+    if (loading || !listing || !detailRef.current) return
+    const detail = detailRef.current
+    const motion = gsap.matchMedia(detail)
+    motion.add('(prefers-reduced-motion: no-preference)', () => {
+      const context = gsap.context(() => {
+        const intro = gsap.timeline({ defaults: { ease: 'power2.out' } })
+        intro.from('.listing-detail__heading', { autoAlpha: 0, y: 10, duration: 0.32 })
+          .from('.listing-detail__offer', { autoAlpha: 0, y: 10, duration: 0.32 }, '-=0.16')
+      }, detail)
+      return () => context.revert()
+    })
+    return () => motion.revert()
+  }, [loading, listing?.id])
+
+  useEffect(() => {
+    if (loading || !listing || !detailRef.current) return
+    if (priorMedia.current === activeMedia) return
+    priorMedia.current = activeMedia
+    const media = detailRef.current.querySelector('.listing-detail__hero-media')
+    if (!media) return
+    const motion = gsap.matchMedia(detailRef.current)
+    motion.add('(prefers-reduced-motion: no-preference)', () => {
+      const tween = gsap.fromTo(media, { autoAlpha: 0.72, y: 5 }, { autoAlpha: 1, y: 0, duration: 0.28, ease: 'power2.out' })
+      return () => tween.kill()
+    })
+    return () => motion.revert()
+  }, [activeMedia, loading, listing])
 
   useEffect(() => {
     fetch(`/api/listings/${encodeURIComponent(slug)}`)
@@ -44,8 +76,6 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
   if (!listing) return <main className="listing-detail"><header className="listing-detail__header"><div className="container-fluid listing-detail__container listing-detail__header-inner"><Link href="/" className="listing-detail__brand">AMSI <span>&amp; Co.</span></Link><Link href="/" className="btn btn-outline-light"><ArrowLeft size={16} /> Marketplace</Link></div></header><div className="container-fluid listing-detail__container py-5"><section className="listing-detail__empty card"><Building2 size={34} /><p className="eyebrow mt-4">Opportunity unavailable</p><h1 className="serif">We couldn't find this listing.</h1><p>{notice || 'It may have been removed or is not published.'}</p><Link href="/" className="btn btn-primary btn-amsi-primary">Browse marketplace <ArrowUpRight size={16} /></Link></section></div></main>
 
   const facts = [
-    ['Category', listing.category],
-    ['Listing type', listing.purpose],
     ...(listing.reference ? [['Reference', listing.reference]] : []),
     ...(listing.category === 'Plots / Land' && listing.upi ? [['UPI / land title', listing.upi]] : []),
   ]
@@ -54,7 +84,7 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
   const description = listing.descriptionEnglish || 'Contact AMSI for more information about this opportunity.'
   const contactHref = `mailto:info@amsi.rw?subject=${encodeURIComponent(`Inquiry: ${listing.title}`)}`
 
-  return <main className="listing-detail" data-sample={listing.isSample ? 'true' : 'false'}>
+  return <main ref={detailRef} className="listing-detail" data-sample={listing.isSample ? 'true' : 'false'}>
     <header className="listing-detail__header">
       <div className="container-fluid listing-detail__container listing-detail__header-inner">
         <Link href="/" className="listing-detail__brand">AMSI <span>&amp; Co.</span></Link>
@@ -75,13 +105,12 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
       </div>
 
       <div className="row g-4 listing-detail__layout">
-        <section className="col-12 col-lg-8 listing-detail__gallery-column order-1" aria-label="Listing photos">
+        <section className="col-12 col-lg-8 listing-detail__gallery-column order-2 order-lg-1" aria-label="Listing photos">
           <div className="listing-detail__gallery">
             {active ? active.contentType.startsWith('video/')
               ? <video key={active.id} src={active.id.startsWith('https://') ? active.id : `/api/media/${active.id}`} controls className="listing-detail__hero-media" />
               : <img src={active.id.startsWith('https://') ? active.id : `/api/media/${active.id}`} alt={`${listing.title}, view ${activeMedia + 1}`} className="listing-detail__hero-media" />
               : <div className="listing-detail__placeholder"><Building2 size={46} /><span>Images for this opportunity are coming soon</span></div>}
-            {active && <span className="listing-detail__gallery-category">{listing.category}</span>}
             {media.length === 1 && <span className="listing-detail__gallery-count">01 <span>/</span> 01</span>}
             {media.length > 1 && <>
               <button type="button" aria-label="Previous media" onClick={() => setActiveMedia(index => (index + media.length - 1) % media.length)} className="listing-detail__gallery-arrow listing-detail__gallery-arrow--previous"><ChevronLeft size={20} /></button>
@@ -92,13 +121,12 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
           {media.length > 1 && <div className="listing-detail__thumbnails" aria-label="Listing media">{media.map((item, index) => <button key={item.id} type="button" onClick={() => setActiveMedia(index)} aria-label={`Show photo ${index + 1}`} aria-pressed={activeMedia === index} className="listing-detail__thumbnail">{item.contentType.startsWith('video/') ? <video src={item.id.startsWith('https://') ? item.id : `/api/media/${item.id}`} /> : <img src={item.id.startsWith('https://') ? item.id : `/api/media/${item.id}`} alt="" />}</button>)}</div>}
         </section>
 
-        <aside className="col-12 col-lg-4 listing-detail__sidebar order-2">
+        <aside className="col-12 col-lg-4 listing-detail__sidebar order-1 order-lg-2">
           <div className="listing-detail__offer card">
             <div className="listing-detail__offer-status"><span /> {listing.isSample ? 'Sample opportunity' : 'Available opportunity'}</div>
             <div className="listing-detail__offer-price"><p className="listing-detail__price-label">{priceLabel}</p><p className="listing-detail__price">{displayPrice}</p>{listing.negotiable && <span className="listing-detail__negotiable">Negotiable</span>}</div>
             <a href={contactHref} className="btn btn-primary btn-amsi-primary listing-detail__primary"><span>Request information</span><ArrowUpRight size={17} /></a>
             <div className="listing-detail__sidefacts">
-              <div><span><MapPin size={14} /> Location</span><strong>{location || 'On request'}</strong></div>
               {listing.plotSize > 0 && <div><span>Plot size</span><strong>{listing.plotSize.toLocaleString()} m²</strong></div>}
               {listing.zoning && <div><span>Land use</span><strong>{listing.zoning}</strong></div>}
             </div>
@@ -108,14 +136,14 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
 
         <section className="col-12 listing-detail__supporting order-3">
           <section className="listing-detail__about">
-            <div className="listing-detail__section-heading"><span>01</span><div><p className="eyebrow">Description</p><h2>About this listing</h2></div></div>
+            <h2 className="serif">About this listing</h2>
             <div className="listing-detail__about-copy"><p>{description}</p>{!listing.isSample && listing.descriptionKinyarwanda && <div className="listing-detail__kinyarwanda"><h3 className="serif">Ibisobanuro</h3><p>{listing.descriptionKinyarwanda}</p></div>}</div>
             {listing.features.length > 0 && <div className="listing-detail__features"><h3 className="serif">Highlights</h3><div className="row g-2">{listing.features.map(feature => <div key={feature} className="col-12 col-sm-6"><span><Check size={15} /> {feature}</span></div>)}</div></div>}
           </section>
 
           <section className="listing-detail__specs" aria-label="Listing specifications">
-            <div className="listing-detail__section-heading"><span>02</span><div><p className="eyebrow">Specifications</p><h2>Listing details</h2></div></div>
-            <div className="row row-cols-2 row-cols-md-3 g-3">{facts.map(([label, value]) => <div className="col" key={label}><Fact label={label} value={value} /></div>)}</div>
+            <h2 className="serif">Key details</h2>
+            <dl className="listing-detail__facts">{facts.map(([label, value]) => <Fact key={label} label={label} value={value} />)}</dl>
           </section>
         </section>
 
@@ -126,5 +154,5 @@ export default function ListingDetail({ params }: { params: Promise<{ slug: stri
 }
 
 function Fact({ label, value }: { label: string; value: string }) {
-  return <div className="listing-detail__fact"><span>{label}</span><strong>{value}</strong></div>
+  return <div className="listing-detail__fact"><dt>{label}</dt><dd>{value}</dd></div>
 }
