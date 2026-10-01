@@ -34,7 +34,7 @@ import { formatListingPrice } from '@/lib/format-listing-price'
 import type { AuctionRecord } from '@/lib/auction-types'
 import { getYouTubeEmbedUrl, type Advertisement } from '@/lib/advertisement-types'
 
-type Mode = 'Buy' | 'Rent' | 'Auction'
+type Mode = 'All' | 'Buy' | 'Rent' | 'Auction'
 type Listing = MarketplaceListing & { id: string }
 type Auction = Omit<AuctionRecord, '_id'> & { id: string }
 type Ad = Advertisement & { id: string }
@@ -51,7 +51,7 @@ const categoryImages: Record<string, string> = {
 }
 
 export default function Page() {
-  const [mode, setMode] = useState<Mode>('Buy')
+  const [mode, setMode] = useState<Mode>('All')
   const [authOpen, setAuthOpen] = useState(false)
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login')
   const [advisorOpen, setAdvisorOpen] = useState(false)
@@ -148,7 +148,7 @@ export default function Page() {
 
   const searchResults = useMemo(() => listings.filter((item) => {
     const purpose = mode === 'Buy' ? 'For sale' : mode === 'Rent' ? 'For rent' : 'For auction'
-    const matchesMode = item.purpose === purpose
+    const matchesMode = mode === 'All' || item.purpose === purpose
     const matchesQuery = !query || `${item.title} ${item.district} ${item.sector} ${item.area} ${item.category}`.toLowerCase().includes(query.toLowerCase())
     return matchesMode && matchesQuery
   }), [listings, mode, query])
@@ -176,9 +176,7 @@ export default function Page() {
   const contentAds = ads.filter(ad => ['wide-post', 'medium-rectangle', 'large-rectangle', 'half-page'].includes(ad.placement))
 
   function openConsultant() {
-    setNotice('Please log in or create an account to speak with our consultants.')
-    setAuthMode('login')
-    setAuthOpen(true)
+    setAdvisorOpen(true)
   }
 
   async function toggleFavorite(listingId: string) {
@@ -340,7 +338,7 @@ function SearchPanel({ mode, setMode, query, setQuery, onSearch }: { mode: Mode;
         </div>
         <div className="col-8 col-xl-5">
           <div className="btn-group w-100 listing-search__modes" role="group" aria-label="Listing type">
-            {(['Buy', 'Rent', 'Auction'] as Mode[]).map(item => <button key={item} type="button" aria-pressed={mode === item} onClick={() => setMode(item)} className={`btn ${mode === item ? 'btn-primary' : 'btn-outline-primary'} listing-search__mode`}>{item === 'Auction' && <Gavel size={13} className="me-1" />}{item}</button>)}
+            {(['All', 'Buy', 'Rent', 'Auction'] as Mode[]).map(item => <button key={item} type="button" aria-pressed={mode === item} onClick={() => setMode(item)} className={`btn ${mode === item ? 'btn-primary' : 'btn-outline-primary'} listing-search__mode`}>{item === 'Auction' && <Gavel size={13} className="me-1" />}{item}</button>)}
           </div>
         </div>
         <div className="col-4 col-xl-2">

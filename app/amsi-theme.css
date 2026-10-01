@@ -626,7 +626,9 @@
 .home-page #marketplace .listing-card__view svg { transition: transform .18s ease; }
 .home-page #marketplace .listing-card__view:hover svg { transform: translate(3px, -2px); }
 .home-page > .home-page__services { padding-block: clamp(3.5rem, 7vw, 6.5rem); }
-.home-page footer { margin-top: 1rem; }
+.home-page footer { margin-top: 1rem; padding-block: 2rem; }
+.home-page footer > div:first-child { gap: 1.5rem; }
+.home-page footer > div:last-child { margin-top: 2rem; }
 
 @media (max-width: 767.98px) {
   .home-page__banner { min-height: 28px; padding: .35rem .6rem; font-size: .57rem; letter-spacing: .09em; }
@@ -671,8 +673,8 @@
 /* Refined motion-led home and decision pages. */
 .home-page__hero {
   min-height: 0;
-  min-height: clamp(390px, 32vw, 460px);
-  padding: 3rem 0 4.25rem;
+  min-height: clamp(340px, 28vw, 400px);
+  padding: 2.5rem 0 3.5rem;
   isolation: isolate;
   background: var(--amsi-blue-deep);
 }
@@ -795,7 +797,10 @@
   .home-page__header.navbar { min-height: 62px; }
   .home-page__nav-inner { min-height: 62px; }
   .home-page__brand-mark { width: 2.15rem; height: 2.15rem; flex-basis: 2.15rem; }
-  .home-page__hero { min-height: 0; padding: 2.15rem 0 3.4rem; }
+  .home-page__hero { min-height: 0; padding: 1.6rem 0 2.8rem; }
+  .home-page footer { padding-block: 1.5rem; }
+  .home-page footer > div:first-child { gap: 1rem; }
+  .home-page footer > div:last-child { margin-top: 1.25rem; padding-top: 1rem; }
   .home-page__hero-title { font-size: clamp(2.65rem, 10vw, 3.35rem); }
   .home-page__hero-index { display: none; }
   .home-page .listing-search { margin-top: -1.2rem; }
